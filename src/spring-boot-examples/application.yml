@@ -1,0 +1,403 @@
+# Spring Boot 主配置文件
+server:
+  port: 8080
+  servlet:
+    context-path: /
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,text/css,text/javascript,application/javascript
+  error:
+    whitelabel:
+      enabled: false
+
+spring:
+  profiles:
+    active: @spring.profiles.active@
+  
+  application:
+    name: fuzhou-tech-alumni-system
+  
+  # 数据源配置
+  datasource:
+    url: jdbc:mysql://localhost:3306/fuzhou_tech_alumni?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8&allowPublicKeyRetrieval=true
+    username: alumni_user
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      connection-timeout: 20000
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      auto-commit: true
+      connection-test-query: SELECT 1
+      
+  # JPA配置
+  jpa:
+    hibernate:
+      ddl-auto: update
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.PhysicalNamingStrategyStandardImpl
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQL8Dialect
+        format_sql: true
+        use_sql_comments: false
+        generate_statistics: false
+        temp:
+          use_jdbc_metadata_defaults: false
+    open-in-view: false
+    
+  # Redis配置
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      timeout: 3000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: -1ms
+          max-idle: 8
+          min-idle: 0
+          
+  # 缓存配置
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000ms
+      cache-null-values: false
+      
+  # 邮件配置
+  mail:
+    host: smtp.qq.com
+    port: 587
+    username: your-email@qq.com
+    password: your-email-password
+    protocol: smtp
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          socketFactory:
+            class: javax.net.ssl.SSLSocketFactory
+            
+  # 文件上传配置
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 10MB
+      max-request-size: 50MB
+      resolve-lazily: false
+      
+  # Jackson配置
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+    time-zone: GMT+8
+    default-property-inclusion: NON_NULL
+    serialization:
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+      
+  # 消息配置
+  messages:
+    basename: i18n/messages
+    encoding: UTF-8
+    cache-duration: 3600s
+    
+  # 任务调度配置
+  task:
+    scheduling:
+      pool:
+        size: 10
+    execution:
+      pool:
+        core-size: 10
+        max-size: 50
+        queue-capacity: 1000
+
+# JWT配置
+jwt:
+  secret: fuzhou-tech-alumni-jwt-secret-key-2024-make-it-long-enough-for-security
+  expiration: 86400000 # 24小时 (毫秒)
+  refresh-expiration: 2592000000 # 30天 (毫秒)
+  header: Authorization
+  token-prefix: Bearer 
+
+# 文件存储配置
+file:
+  upload:
+    # 文件存储路径
+    path: /app/uploads/
+    # 临时文件路径
+    temp-path: /app/temp/
+    # 访问URL前缀
+    url-prefix: https://your-domain.com/files/
+    # 允许的文件类型
+    allowed-types:
+      - jpg
+      - jpeg
+      - png
+      - gif
+      - pdf
+      - doc
+      - docx
+      - xls
+      - xlsx
+      - mp4
+      - avi
+      - mov
+    # 最大文件大小 (字节)
+    max-size: 10485760 # 10MB
+    # 图片压缩配置
+    image:
+      # 缩略图尺寸
+      thumbnail-size: 200
+      # 压缩质量 (0.0-1.0)
+      quality: 0.8
+      # 最大宽度
+      max-width: 1920
+      # 最大高度
+      max-height: 1080
+
+# 应用配置
+app:
+  # 应用名称
+  name: 福州理工学院校友通讯网
+  version: 1.0.0
+  description: 福州理工学院校友通讯网后端API服务
+  
+  # 跨域配置
+  cors:
+    allowed-origins:
+      - http://localhost:3000
+      - http://localhost:5173
+      - https://your-frontend-domain.com
+    allowed-methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - PATCH
+      - OPTIONS
+    allowed-headers:
+      - "*"
+    allow-credentials: true
+    max-age: 3600
+    
+  # 安全配置
+  security:
+    # 密码加密强度
+    password-strength: 12
+    # 登录失败锁定
+    login-attempt:
+      max-attempts: 5
+      lock-duration: 300000 # 5分钟
+    # IP白名单
+    ip-whitelist:
+      - 127.0.0.1
+      - localhost
+    # 敏感词过滤
+    sensitive-words:
+      enabled: true
+      words:
+        - 测试敏感词1
+        - 测试敏感词2
+        
+  # 系统默认配置
+  defaults:
+    # 分页配置
+    page-size: 10
+    max-page-size: 100
+    # 用户默认头像
+    default-avatar: https://your-domain.com/images/default-avatar.png
+    # 默认相册封面
+    default-album-cover: https://your-domain.com/images/default-album.png
+    
+  # 通知配置
+  notification:
+    # 邮件通知
+    email:
+      enabled: true
+      from: noreply@fzit.edu.cn
+      templates:
+        welcome: welcome-email-template
+        reset-password: reset-password-template
+        activity-reminder: activity-reminder-template
+    # 短信通知
+    sms:
+      enabled: false
+      provider: aliyun
+      access-key: your-access-key
+      access-secret: your-access-secret
+    # WebSocket通知
+    websocket:
+      enabled: true
+      endpoint: /ws
+      
+  # 第三方服务配置
+  third-party:
+    # 阿里云OSS
+    oss:
+      enabled: false
+      endpoint: https://oss-cn-hangzhou.aliyuncs.com
+      access-key-id: your-access-key-id
+      access-key-secret: your-access-key-secret
+      bucket-name: your-bucket-name
+    # 腾讯云COS
+    cos:
+      enabled: false
+      region: ap-beijing
+      secret-id: your-secret-id
+      secret-key: your-secret-key
+      bucket-name: your-bucket-name
+    # 百度地图API
+    baidu-map:
+      enabled: false
+      ak: your-baidu-map-ak
+    # 微信小程序
+    wechat:
+      enabled: false
+      app-id: your-wechat-app-id
+      app-secret: your-wechat-app-secret
+
+# 监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    cn.edu.fzit.alumni: DEBUG
+    org.springframework.security: DEBUG
+    org.springframework.web: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{50} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{50} - %msg%n"
+  file:
+    name: logs/alumni-system.log
+    max-size: 100MB
+    max-history: 30
+    
+# Swagger API文档配置
+springfox:
+  documentation:
+    swagger:
+      v2:
+        path: /api-docs
+    swagger-ui:
+      path: /swagger-ui.html
+
+---
+# 开发环境配置
+spring:
+  profiles: dev
+  
+  datasource:
+    password: dev_password
+    
+  jpa:
+    show-sql: true
+    
+  data:
+    redis:
+      password: # 开发环境Redis无密码
+      
+logging:
+  level:
+    cn.edu.fzit.alumni: DEBUG
+    org.springframework.security: DEBUG
+
+file:
+  upload:
+    path: ./uploads/
+    url-prefix: http://localhost:8080/files/
+
+---
+# 测试环境配置
+spring:
+  profiles: test
+  
+  datasource:
+    url: jdbc:mysql://test-db:3306/fuzhou_tech_alumni_test?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
+    password: test_password
+    
+  data:
+    redis:
+      host: test-redis
+      password: test_redis_password
+      
+logging:
+  level:
+    cn.edu.fzit.alumni: INFO
+
+file:
+  upload:
+    path: /app/test-uploads/
+    url-prefix: https://test-api.fzit.edu.cn/files/
+
+---
+# 生产环境配置
+spring:
+  profiles: prod
+  
+  datasource:
+    url: jdbc:mysql://prod-db:3306/fuzhou_tech_alumni?useUnicode=true&characterEncoding=utf8&useSSL=true&serverTimezone=GMT%2B8
+    password: ${DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 50
+      
+  data:
+    redis:
+      host: prod-redis
+      password: ${REDIS_PASSWORD}
+      
+  jpa:
+    show-sql: false
+    
+logging:
+  level:
+    root: WARN
+    cn.edu.fzit.alumni: INFO
+  file:
+    name: /var/log/alumni-system/alumni-system.log
+
+file:
+  upload:
+    path: /data/uploads/
+    url-prefix: https://api.fzit.edu.cn/files/
+
+# 生产环境安全配置
+jwt:
+  secret: ${JWT_SECRET}
+  
+app:
+  security:
+    ip-whitelist:
+      - ${ALLOWED_IP_1}
+      - ${ALLOWED_IP_2}

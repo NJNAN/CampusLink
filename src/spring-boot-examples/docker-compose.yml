@@ -1,0 +1,167 @@
+version: '3.8'
+
+services:
+  # 应用服务
+  alumni-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: alumni-app
+    ports:
+      - "8080:8080"
+    depends_on:
+      - mysql
+      - redis
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/fuzhou_tech_alumni?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=GMT%2B8
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD:-alumni123}
+      - SPRING_DATA_REDIS_HOST=redis
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - JWT_SECRET=${JWT_SECRET:-fuzhou-tech-alumni-jwt-secret-key-2024-make-it-long-enough-for-security}
+      - FILE_UPLOAD_PATH=/app/uploads/
+      - FILE_UPLOAD_URL_PREFIX=https://api.fzit.edu.cn/files/
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/var/log/alumni-system
+    restart: unless-stopped
+    networks:
+      - alumni-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # MySQL数据库
+  mysql:
+    image: mysql:8.0
+    container_name: alumni-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root123}
+      MYSQL_DATABASE: fuzhou_tech_alumni
+      MYSQL_USER: alumni_user
+      MYSQL_PASSWORD: ${DB_PASSWORD:-alumni123}
+      TZ: Asia/Shanghai
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./my.cnf:/etc/mysql/conf.d/my.cnf
+    command: 
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max_connections=1000
+      - --innodb_buffer_pool_size=256M
+    restart: unless-stopped
+    networks:
+      - alumni-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root123}"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  # Redis缓存
+  redis:
+    image: redis:7.0-alpine
+    container_name: alumni-redis
+    ports:
+      - "6379:6379"
+    environment:
+      TZ: Asia/Shanghai
+    volumes:
+      - redis_data:/data
+      - ./redis.conf:/etc/redis/redis.conf
+    command: redis-server /etc/redis/redis.conf
+    restart: unless-stopped
+    networks:
+      - alumni-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # Nginx反向代理
+  nginx:
+    image: nginx:alpine
+    container_name: alumni-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./uploads:/usr/share/nginx/html/files
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - alumni-app
+    restart: unless-stopped
+    networks:
+      - alumni-network
+
+  # Prometheus监控
+  prometheus:
+    image: prom/prometheus
+    container_name: alumni-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - alumni-network
+
+  # Grafana可视化
+  grafana:
+    image: grafana/grafana
+    container_name: alumni-grafana
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin123}
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - alumni-network
+
+networks:
+  alumni-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+
+# 环境变量说明：
+# DB_PASSWORD: 数据库密码
+# MYSQL_ROOT_PASSWORD: MySQL root密码
+# REDIS_PASSWORD: Redis密码（可选）
+# JWT_SECRET: JWT密钥
+# GRAFANA_PASSWORD: Grafana管理员密码
